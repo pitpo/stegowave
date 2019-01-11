@@ -33,3 +33,6 @@
 
 # VS Code files
 .vscode
+
+# Test files
+*.wav
