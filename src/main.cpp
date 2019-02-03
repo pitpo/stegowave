@@ -10,14 +10,15 @@
 void help(std::string name) {
     std::cerr << "Usage: " << name << " <option> <parameters> SOURCE\n"
               << "Options:\n"
-              << "\t-h,--help\t\t\tShow this help message\n"
+              << "\t-h,--help\t\t\t\tShow this help message\n"
               << "\t-e,--encode (echo [-0 -1 -a]/phase)\tEncode data into wave file using (echo hiding/phase coding) method\n"
-              << "\t-d,--decode (echo/phase)\tDecode data from wave file using (echo hiding/phase coding) method\n\n"
+              << "\t-d,--decode (echo [-0 -1 -s]/phase)\tDecode data from wave file using (echo hiding/phase coding) method\n\n"
               << "Parameters:\n"
-              << "\t-0 [shift]\tSpecify the echo shift for bit 0"
-              << "\t-1 [shift]\tSpecify the echo shift for bit 1"
-              << "\t-a [amplitude]\tSpecify the max amplitude of applied echo (0.0 to 1.0)"
-              << "\t-offset [offset]\tSpecify the offset from which encoding/decoding should start"
+              << "\t-0 [shift]\t\t\tSpecify the echo shift for bit 0\n"
+              << "\t-1 [shift]\t\t\tSpecify the echo shift for bit 1\n"
+              << "\t-a [amplitude]\t\t\tSpecify the max amplitude of applied echo (0.0 to 1.0)\n"
+              << "\t-s [size]\t\t\tHint the size of expected output (in bytes)\n"
+              << "\t-offset [offset]\t\tSpecify the offset from which encoding/decoding should start\n"
               << "\t-b,--block-size [power-of-2]\tSpecify the amount of samples in block (default is 1024)\n"
               << "\t--data [path-to-file]\t\tSpecify the data file to be encoded in file (while using phase coding, it's size must be lower or equal to block size [in bits])\n"
               << "\t--output [path-to-file]\t\tSpecify the file that output should be written to (default is [original-name.dat])" << std::endl;
@@ -26,15 +27,17 @@ void help(std::string name) {
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         help(argv[0]);
+        return 0;
     }
     MODE mode_flag = UNSET;
     int block_size = 1024;
     int offset = 0;
-    int d0, d1;
-    d0 = d1 = -1;
+    int d0, d1, hint;
+    d0 = d1 = hint = -1;
     double amplitude = -2;
     std::string method, input, data, output;
-    method = input = data = output = "";
+    method = input = data = "";
+    output = "output";
 
     while (true) {
         int option_index = 0;
@@ -45,11 +48,11 @@ int main(int argc, char *argv[]) {
             { "block-size",required_argument, 0, 'b' },
             { "data",	   required_argument, 0, 'i' },
             { "output",	   required_argument, 0, 'o' },
-            { "offset",    required_argument, 0, 's' },
+            { "offset",    required_argument, 0, 'f' },
             { 0, 0, 0, 0}
         };
 
-        int c = getopt_long(argc, argv, "he:d:b:s:0:1:a:", long_options, &option_index);
+        int c = getopt_long(argc, argv, "he:d:b:f:s:0:1:a:", long_options, &option_index);
         if (c == -1) {
             break;
         }
@@ -84,6 +87,7 @@ int main(int argc, char *argv[]) {
                         block_size = val;
                     } else {
                         std::cerr << "Invalid block size, using default (1024)" << std::endl;
+                        block_size = val;
                     }
                 } else {
                     std::cerr << "No block size specified, using default (1024)" << std::endl;
@@ -99,7 +103,7 @@ int main(int argc, char *argv[]) {
                     output = std::string(optarg);
                 }
                 break;
-            case 's':
+            case 'f':
                 if (optarg) {
                     offset = std::stoi(optarg);
                 }
@@ -119,6 +123,10 @@ int main(int argc, char *argv[]) {
                     amplitude = std::stod(optarg);
                 }
                 break;
+            case 's':
+                if (optarg) {
+                    hint = std::stoi(optarg);
+                }
             default:
                 break;
         }
@@ -133,8 +141,7 @@ int main(int argc, char *argv[]) {
 
     if (method.compare("echo") == 0) {
         try {
-            std::cout << block_size << std::endl;
-            echo(mode_flag, input, output, data, block_size, d0, d1, amplitude, offset);
+            echo(mode_flag, input, output, data, block_size, d0, d1, amplitude, offset, hint);
         } catch (const char *msg) {
             std::cerr << msg << std::endl;
         }

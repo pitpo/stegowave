@@ -92,15 +92,3 @@ void Wave::read_wav(std::string pathToFile) {
 
     file.close();
 }
-
-// int main() {
-//     try {
-//         Wave wav = Wave("Lights & Motion - Taking Flight.wav");
-//         wav.write_wav("processed.wav");
-//     } catch (const char *msg) {
-//         std::cerr << msg << std::endl;
-//     }
-//     // for (int i = 0; i < wav.size(); i++) {
-//     //     std::cout << wav[i];
-//     // }
-// }

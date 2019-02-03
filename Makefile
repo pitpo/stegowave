@@ -2,7 +2,7 @@ OBJS = utils.o wav.o echo.o
 PROGRAM = $(OBJS) src/main.cpp
 CC = g++
 DEBUG = -g
-CFLAGS = -Wall -c -std=c++11
+CFLAGS = -c -std=c++11
 LFLAGS = -Wall -std=c++11 -lfftw3 -lm
 
 stegowave : $(PROGRAM)

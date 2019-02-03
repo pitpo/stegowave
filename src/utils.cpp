@@ -1,6 +1,9 @@
 #include <vector>
 #include <fstream>
 #include "utils.hpp"
+#include <cmath>
+
+# define M_PI           3.14159265358979323846  /* pi */
 
 std::vector<bool> read_bits(std::string pathToFile) {
     std::ifstream file(pathToFile, std::ios::binary | std::ios::in);
@@ -14,7 +17,20 @@ std::vector<bool> read_bits(std::string pathToFile) {
     file.close();
     return output;
 }
- 
+
+void save_bits(std::string pathToFile, std::vector<bool> bits) {
+    std::ofstream file(pathToFile, std::ios::binary | std::ios::out);
+    char c = 0;
+    for (int i = 0; i < bits.size(); i++) {
+        c <<= 1;
+        c |= bits[i] & 1;
+        if (i % 8 == 7) {
+            file.put(c);
+        }
+    }
+    file.close();
+}
+
 double pcm_to_double(short signal) {
     double d = (double) signal / (double)32768;
     if (d > 1) {
@@ -34,4 +50,8 @@ short double_to_pcm(double signal) {
         d = -32768;
     }
     return (short)d;
+}
+
+double mixer_translate(int i) {
+    return (std::cos(((double)(i+300)/200) * M_PI) + 1.0)/2;
 }
