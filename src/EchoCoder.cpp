@@ -113,7 +113,7 @@ std::vector<short> EchoCoder::apply_echo(channel_vec&left, channel_vec&right, st
     return out;
 }
 
-void EchoCoder::calculate_spectrum(double *dv, fftw_complex *cv, fftw_plan&pf, fftw_plan&pb, channel_vec& channel, int current_offset) {
+void EchoCoder::calculate_cepstrum(double *dv, fftw_complex *cv, fftw_plan&pf, fftw_plan&pb, channel_vec& channel, int current_offset) {
     for (int i = current_offset, j = 0; j < block_size; i++, j++) {
         dv[j] = pcm_to_double(*channel[i].get());
     }
@@ -148,19 +148,15 @@ std::vector<bool> EchoCoder::extract_echo(channel_vec&left, channel_vec&right) {
     for (int i = 0; i < hint * byte_size; i++) {
         int current_offset = i * block_size + offset / 2;
 
-        calculate_spectrum(dv, cv, pf, pb, left, current_offset);
+        calculate_cepstrum(dv, cv, pf, pb, left, current_offset);
         double l0 = dv[d0];
         double l1 = dv[d1];
 
-        calculate_spectrum(dv, cv, pf, pb, right, current_offset);
+        calculate_cepstrum(dv, cv, pf, pb, right, current_offset);
         double r0 = dv[d0];
         double r1 = dv[d1];
 
-        if (l0 - l1 > r0 - r1) {
-            byte[i % byte_size] = 0;
-        } else {
-            byte[i % byte_size] = 1;
-        }
+        byte[i % byte_size] = (l0 - l1 > r0 - r1) ? 0 : 1;
 
         if (ecc && i % byte_size == byte_size - 1) {
             // TODO: Reimplement ecc

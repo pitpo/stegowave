@@ -24,7 +24,7 @@ class EchoCoder : public WaveCoder {
     channel_vec get_raw_echo(channel_vec&, std::vector<bool>&, bool);
     std::vector<double> get_mixer(std::vector<bool>&);
     std::vector<short> apply_echo(channel_vec&, channel_vec&, std::vector<bool>&);
-    void calculate_spectrum(double*, fftw_complex*, fftw_plan&, fftw_plan&, channel_vec&, int);
+    void calculate_cepstrum(double*, fftw_complex*, fftw_plan&, fftw_plan&, channel_vec&, int);
     std::vector<bool> extract_echo(channel_vec&, channel_vec&);
 
 public:
