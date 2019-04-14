@@ -171,3 +171,7 @@ std::vector<bool> EchoCoder::extract_echo(channel_vec&left, channel_vec&right) {
     fftw_free(cv);
     return result;
 }
+
+EchoCoder::~EchoCoder() {
+    delete wave_file;
+}
