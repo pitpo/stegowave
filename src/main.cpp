@@ -1,7 +1,9 @@
 #include <iostream>
 #include <getopt.h>
-#include "utils.hpp"
-#include "echo.hpp"
+#include "Utils.hpp"
+#include "EchoCoder.hpp"
+#include "WaveCoder.hpp"
+#include "WaveCoderBuilder.hpp"
 
 #ifndef __MINGW64__
 #include "stdafx.h"
@@ -18,7 +20,8 @@ void help(std::string name) {
               << "\t-1 [shift]\t\t\tSpecify the echo shift for bit 1\n"
               << "\t-a [amplitude]\t\t\tSpecify the max amplitude of applied echo (0.0 to 1.0)\n"
               << "\t-s [size]\t\t\tHint the size of expected output (in bytes)\n"
-              << "\t-offset [offset]\t\tSpecify the offset from which encoding/decoding should start\n"
+              << "\t--offset [offset]\t\tSpecify the offset from which encoding/decoding should start\n"
+              << "\t--ecc\t\t\t\tToggle error correction code (writes additional 4 bits for each byte)\n"
               << "\t-b,--block-size [power-of-2]\tSpecify the amount of samples in block (default is 1024)\n"
               << "\t--data [path-to-file]\t\tSpecify the data file to be encoded in file (while using phase coding, it's size must be lower or equal to block size [in bits])\n"
               << "\t--output [path-to-file]\t\tSpecify the file that output should be written to (default is [original-name.dat])" << std::endl;
@@ -30,15 +33,8 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     MODE mode_flag = UNSET;
-    int block_size = 1024;
-    int offset = 0;
-    int d0, d1, hint;
-    d0 = d1 = hint = -1;
-    double amplitude = -2;
-    std::string method, input, data, output;
-    method = input = data = "";
-    output = "output";
-
+    std::string input;
+    WaveCoderBuilder wave_coder_builder;
     while (true) {
         int option_index = 0;
         static struct option long_options[] = {
@@ -49,6 +45,7 @@ int main(int argc, char *argv[]) {
             { "data",	   required_argument, 0, 'i' },
             { "output",	   required_argument, 0, 'o' },
             { "offset",    required_argument, 0, 'f' },
+            { "ecc",       no_argument      , 0, 'c' },
             { 0, 0, 0, 0}
         };
 
@@ -70,7 +67,12 @@ int main(int argc, char *argv[]) {
                     mode_flag = DECODE;
                 }
                 if (optarg) {
-                    method = std::string(optarg);
+                    std::string method = std::string(optarg);
+                    if (method.compare("echo") == 0) {
+                        wave_coder_builder.setCoderType(ECHO);
+                    } else if (method.compare("phase") == 0) {
+                        wave_coder_builder.setCoderType(PHASE);
+                    }
                 } else {
                     std::cerr << "Error: no method specified" << std::endl;
                     exit(-1);
@@ -78,73 +80,70 @@ int main(int argc, char *argv[]) {
                 break;
             case 'b':
                 if (optarg) {
-                    int val = std::stoi(optarg);
-                    int check = val;
-                    while (check % 2 == 0 && check != 2) {
-                        check /= 2;
-                    }
-                    if (check == 2) {
-                        block_size = val;
-                    } else {
-                        std::cerr << "Invalid block size, using default (1024)" << std::endl;
-                        block_size = val;
-                    }
+                    wave_coder_builder.setBlockSize(std::stoi(optarg));
                 } else {
-                    std::cerr << "No block size specified, using default (1024)" << std::endl;
+                    std::cout << "No block size specified, using default (2048)" << std::endl;
                 }
                 break;
             case 'i':
                 if (optarg) {
-                    data = std::string(optarg);
+                    wave_coder_builder.setDataFile(std::string(optarg));
                 }
                 break;
             case 'o':
                 if (optarg) {
-                    output = std::string(optarg);
+                    wave_coder_builder.setOutputFile(std::string(optarg));
                 }
                 break;
             case 'f':
                 if (optarg) {
-                    offset = std::stoi(optarg);
+                    wave_coder_builder.setWaveOffset(std::stoi(optarg));
                 }
                 break;
             case '0':
                 if (optarg) {
-                    d0 = std::stoi(optarg);
+                    wave_coder_builder.setZeroBitEcho(std::stoi(optarg));
                 }
                 break;
             case '1':
                 if (optarg) {
-                    d1 = std::stoi(optarg);
+                    wave_coder_builder.setOneBitEcho(std::stoi(optarg));
                 }
                 break;
             case 'a':
                 if (optarg) {
-                    amplitude = std::stod(optarg);
+                    wave_coder_builder.setEchoAmplitude(std::stod(optarg));
                 }
                 break;
             case 's':
                 if (optarg) {
-                    hint = std::stoi(optarg);
+                    wave_coder_builder.setDataSizeHint(std::stoi(optarg));
                 }
+                break;
+            case 'c':
+                wave_coder_builder.setECCMode(true);
+                break;
             default:
                 break;
         }
     }
-
     if (optind < argc) {
         input = argv[optind++];
+        wave_coder_builder.setInputFile(input);
     } else {
         help(argv[0]);
         return 0;
     }
 
-    if (method.compare("echo") == 0) {
-        try {
-            echo(mode_flag, input, output, data, block_size, d0, d1, amplitude, offset, hint);
-        } catch (const char *msg) {
-            std::cerr << msg << std::endl;
+    try {
+        auto coder = wave_coder_builder.build();
+        if (mode_flag == ENCODE) {
+            (*coder.get()).encode();
+        } else if (mode_flag == DECODE) {
+            (*coder.get()).decode();
         }
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
     }
     // printf("Mode: %d, method: %s, block_size: %d, data: %s, output %s\n", mode_flag, method.c_str(), block_size, data.c_str(), output.c_str());
 }

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string.h>
 #include <iterator>
-#include "wav.hpp"
+#include "Wave.hpp"
 
 Wave::Wave(std::string pathToFile) {
     read_wav(pathToFile);
@@ -17,14 +17,16 @@ Wave::~Wave() {
     delete[] footer;
 }
 
-std::tuple<std::vector<short>, std::vector<short> > Wave::split_channels() {
-    std::vector<short> left, right;
+std::tuple<std::vector<std::shared_ptr<short>>, std::vector<std::shared_ptr<short>> > Wave::split_channels() {
+    std::vector<std::shared_ptr<short>> left, right;
+    left.reserve(data.size()/2);
+    right.reserve(data.size()/2);
 
     for (int i = 0; i < data.size(); i++) {
         if (i % 2 == 0) {
-            left.push_back(data[i]);
+            left.push_back(std::make_shared<short>(data[i]));
         } else {
-            right.push_back(data[i]);
+            right.push_back(std::make_shared<short>(data[i]));
         }
     }
     return std::make_tuple(left, right);
@@ -87,8 +89,12 @@ void Wave::read_wav(std::string pathToFile) {
     size_t footerSize	 = filelength - file.tellg();
     char   *footerBuffer = new char[footerSize];
     file.read(footerBuffer, footerSize);
-    footerSize = footerSize;
+    this->footerSize = footerSize;
     footer	   = footerBuffer;
 
     file.close();
+}
+
+void Wave::set_data(std::vector<short> data) {
+    this->data = data;
 }

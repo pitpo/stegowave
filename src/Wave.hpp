@@ -1,8 +1,9 @@
-#ifndef WAV_HPP
-#define WAV_HPP
+#ifndef WAVE_HPP
+#define WAVE_HPP
 
 #include <vector>
 #include <string>
+#include <memory>
 
 class Wave {
     char *header;
@@ -11,16 +12,17 @@ class Wave {
     int channels;
     size_t footerSize;
     char *footer;
+    std::vector<short> data;
 
     void read_wav(std::string pathToFile);
 
 public:
-    std::vector<short> data;
 
     Wave(std::string pathToFile);
     ~Wave();
-    std::tuple<std::vector<short>, std::vector<short> > split_channels();
+    std::tuple<std::vector<std::shared_ptr<short>>, std::vector<std::shared_ptr<short>>> split_channels();
     void write_wav(std::string pathToFile);
+    void set_data(std::vector<short> data);
 };
 
 #endif
