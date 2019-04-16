@@ -1,6 +1,7 @@
 #include "WaveCoderBuilder.hpp"
 #include "Wave.hpp"
 #include "EchoCoder.hpp"
+#include "PhaseCoder.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <fstream>
@@ -124,7 +125,11 @@ std::unique_ptr<WaveCoder> WaveCoderBuilder::build_echo() {
 }
 
 std::unique_ptr<WaveCoder> WaveCoderBuilder::build_phase() {
-    throw std::runtime_error("Not implemented");
+    Wave *wave_file = new Wave(input_file);
+    return std::make_unique<PhaseCoder>(
+        wave_file,
+        block_size
+    );
 }
 
 std::unique_ptr<WaveCoder> WaveCoderBuilder::build() {
