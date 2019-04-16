@@ -20,7 +20,7 @@ public:
 
     Wave(std::string pathToFile);
     ~Wave();
-    std::tuple<std::vector<std::shared_ptr<short>>, std::vector<std::shared_ptr<short>>> split_channels();
+    std::tuple<std::vector<short>, std::vector<short>> split_channels();
     void write_wav(std::string pathToFile);
     void set_data(std::vector<short> data);
 };

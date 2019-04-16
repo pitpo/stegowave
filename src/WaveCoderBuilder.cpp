@@ -11,6 +11,8 @@ WaveCoderBuilder& WaveCoderBuilder::setInputFile(std::string input_file) {
 
     if (!f.good()) {
         throw std::invalid_argument("Given input file does not exist");
+    } else {
+        f.close();
     }
     this->input_file = input_file;
     return *this;
@@ -21,6 +23,7 @@ WaveCoderBuilder& WaveCoderBuilder::setOutputFile(std::string output_file) {
 
     if (f.good()) {
         std::cout << "WARNING: Given output file already exists, it will be overwritten" << std::endl;
+        f.close();
     }
     this->output_file = output_file;
     return *this;
@@ -31,6 +34,7 @@ WaveCoderBuilder& WaveCoderBuilder::setDataFile(std::string data_file) {
 
     if (!f.good()) {
         throw std::invalid_argument("Given data file does not exist");
+        f.close();
     }
     this->data_file = data_file;
     return *this;

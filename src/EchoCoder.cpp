@@ -6,8 +6,6 @@
 #include <iostream>
 #include <algorithm>
 
-using channel_vec = std::vector<std::shared_ptr<short>>;
-
 void EchoCoder::encode() {
     std::cout << "Encoding using echo hiding method" << std::endl;
     std::cout << "Preparing wave file..." << std::endl;
@@ -23,11 +21,6 @@ void EchoCoder::encode() {
     std::cout << "Encoding in progress..." << std::endl;
     auto encoded_data = apply_echo(std::get<0>(channels), std::get<1>(channels), data_bits);
 
-    for (int i = 0; i < std::get<0>(channels).size(); i++) {
-        std::get<0>(channels)[i].reset();
-        std::get<1>(channels)[i].reset();
-    }
-
     (*wave_file).set_data(encoded_data);
     std::cout << "Saving new wave file as \"" << output_file << "\"" << std::endl;
     (*wave_file).write_wav(output_file);
@@ -41,25 +34,22 @@ void EchoCoder::decode() {
     std::cout << "Decoding in progress..." << std::endl;
     auto decoded_data = extract_echo(std::get<0>(channels), std::get<1>(channels));
 
-    for (int i = 0; i < std::get<0>(channels).size(); i++) {
-        std::get<0>(channels)[i].reset();
-        std::get<1>(channels)[i].reset();
-    }
     std::cout << "Writing output into \"" << output_file << "\" file" << std::endl;
     save_bits(output_file, decoded_data);
 }
 
-channel_vec EchoCoder::get_raw_echo(channel_vec& channel, std::vector<bool>& data_bits, bool bit) {
-    channel_vec echo;
+std::vector<short> EchoCoder::get_raw_echo(std::vector<short>& channel, std::vector<bool>& data_bits, bool bit) {
+    std::vector<short> echo;
+    echo.reserve(data_bits.size() * block_size);
     int d = bit == 0 ? d0 : d1;
 
     for (int i = 0; i < data_bits.size(); i++) {
         int current_offset = offset / 2 + i * block_size;
         for (int j = current_offset; j < current_offset + block_size; j++) {
             if (i == 0 && j < d) {
-                echo.push_back(std::make_shared<short>(0));
+                echo.push_back(0);
             } else {
-                echo.push_back(std::shared_ptr(channel[j - d]));
+                echo.push_back(channel[j - d]);
             }
         }
     }
@@ -68,6 +58,7 @@ channel_vec EchoCoder::get_raw_echo(channel_vec& channel, std::vector<bool>& dat
 
 std::vector<double> EchoCoder::get_mixer(std::vector<bool>& data_bits) {
     std::vector<double> mixer;
+    mixer.reserve(data_bits.size() * block_size);
 
     for (int i = 0; i < data_bits.size(); i++) {
         int sign = data_bits[i] == 1 ? 1 : -1;
@@ -84,15 +75,15 @@ std::vector<double> EchoCoder::get_mixer(std::vector<bool>& data_bits) {
     return mixer;
 }
 
-short get_applied_echo(channel_vec& channel, channel_vec& channel_d0, channel_vec& channel_d1, std::vector<double>& mixer, double echo_amplitude, int offset, int i) {
+short get_applied_echo(std::vector<short>& channel, std::vector<short>& channel_d0, std::vector<short>& channel_d1, std::vector<double>& mixer, double echo_amplitude, int offset, int i) {
     return double_to_pcm(
-        pcm_to_double(*channel[offset].get()) +
-        echo_amplitude * pcm_to_double(*channel_d1[i].get()) * mixer[i] +
-        echo_amplitude * pcm_to_double(*channel_d0[i].get()) * (1.0 - mixer[i])
+        pcm_to_double(channel[offset]) +
+        echo_amplitude * pcm_to_double(channel_d1[i]) * mixer[i] +
+        echo_amplitude * pcm_to_double(channel_d0[i]) * (1.0 - mixer[i])
     );
 }
 
-std::vector<short> EchoCoder::apply_echo(channel_vec&left, channel_vec&right, std::vector<bool>&data_bits) {
+std::vector<short> EchoCoder::apply_echo(std::vector<short>&left, std::vector<short>&right, std::vector<bool>&data_bits) {
     auto left_d0  = get_raw_echo(left, data_bits, 0);
     auto left_d1  = get_raw_echo(left, data_bits, 1);
     auto right_d0 = get_raw_echo(right, data_bits, 1);
@@ -107,15 +98,15 @@ std::vector<short> EchoCoder::apply_echo(channel_vec&left, channel_vec&right, st
     }
 
     for (; i < left.size(); i++) {
-        out.push_back(*left[i].get());
-        out.push_back(*right[i].get());
+        out.push_back(left[i]);
+        out.push_back(right[i]);
     }
     return out;
 }
 
-void EchoCoder::calculate_cepstrum(double *dv, fftw_complex *cv, fftw_plan&pf, fftw_plan&pb, channel_vec& channel, int current_offset) {
+void EchoCoder::calculate_cepstrum(double *dv, fftw_complex *cv, fftw_plan&pf, fftw_plan&pb, std::vector<short>& channel, int current_offset) {
     for (int i = current_offset, j = 0; j < block_size; i++, j++) {
-        dv[j] = pcm_to_double(*channel[i].get());
+        dv[j] = pcm_to_double(channel[i]);
     }
     fftw_execute(pf);
     for (int i = 0; i <= block_size / 2; i++) {
@@ -127,7 +118,7 @@ void EchoCoder::calculate_cepstrum(double *dv, fftw_complex *cv, fftw_plan&pf, f
     fftw_execute(pb);
 }
 
-std::vector<bool> EchoCoder::extract_echo(channel_vec&left, channel_vec&right) {
+std::vector<bool> EchoCoder::extract_echo(std::vector<short>&left, std::vector<short>&right) {
     double			  *dv;
     fftw_complex	  *cv;
     fftw_plan		  pf, pb;
