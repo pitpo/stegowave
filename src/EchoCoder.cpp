@@ -12,7 +12,12 @@ void EchoCoder::encode() {
     auto channels = (*wave_file).split_channels();
     std::vector<bool> data_bits;
     if (ecc) {
-        data_bits = read_bits_with_ecc(data_file);
+        std::cout << "WARNING: Injecting recovery data" << std::endl;
+        if (block_size > 2048) {
+            data_bits = read_bits_with_ecc_8bit(data_file);
+        } else {
+            data_bits = read_bits_with_ecc_6bit(data_file);
+        }
     } else {
         data_bits = read_bits(data_file);
     }
@@ -133,9 +138,14 @@ std::vector<bool> EchoCoder::extract_echo(std::vector<short>&left, std::vector<s
     pf = fftw_plan_dft_r2c_1d(block_size, dv, cv, FFTW_MEASURE);
     pb = fftw_plan_dft_c2r_1d(block_size, cv, dv, FFTW_MEASURE);
 
-    int byte_size = ecc ? 12 : 8;
+    int byte_size = 8;
+    if (ecc) {
+        byte_size = (block_size > 2048) ? 12 : 14;
+    }
+    int errors_recovered = 0;
+    int errors_in_ecc = 0;
 
-    int byte[byte_size];
+    bool byte[byte_size];
     for (int i = 0; i < hint * byte_size; i++) {
         int current_offset = i * block_size + offset / 2;
 
@@ -150,11 +160,18 @@ std::vector<bool> EchoCoder::extract_echo(std::vector<short>&left, std::vector<s
         byte[i % byte_size] = (l0 - l1 > r0 - r1) ? 0 : 1;
 
         if (ecc && i % byte_size == byte_size - 1) {
-            // TODO: Reimplement ecc
+            if (block_size > 2048) {
+                decode_ecc_8bit(result, byte, errors_recovered, errors_in_ecc);
+            } else {
+                decode_ecc_6bit(result, byte, errors_recovered, errors_in_ecc);
+            }
         } else if (!ecc) {
             result.push_back(byte[i % byte_size]);
         }
     }
+
+    if (ecc)
+        std::cout << errors_recovered << " bits had errors, " << errors_in_ecc << " of them were in recovery data" << std::endl;
 
     fftw_destroy_plan(pf);
     fftw_destroy_plan(pb);

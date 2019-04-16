@@ -21,7 +21,7 @@ void help(std::string name) {
               << "\t-a [amplitude]\t\t\tSpecify the max amplitude of applied echo (0.0 to 1.0)\n"
               << "\t-s [size]\t\t\tHint the size of expected output (in bytes)\n"
               << "\t--offset [offset]\t\tSpecify the offset from which encoding/decoding should start\n"
-              << "\t--ecc\t\t\t\tToggle error correction code (writes additional 4 bits for each byte)\n"
+              << "\t--ecc\t\t\t\tToggle error correction code (writes additional 4 or 6 bits for each byte)\n"
               << "\t-b,--block-size [power-of-2]\tSpecify the amount of samples in block (default is 1024)\n"
               << "\t--data [path-to-file]\t\tSpecify the data file to be encoded in file (while using phase coding, it's size must be lower or equal to block size [in bits])\n"
               << "\t--output [path-to-file]\t\tSpecify the file that output should be written to (default is [original-name.dat])" << std::endl;

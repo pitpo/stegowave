@@ -14,9 +14,7 @@ public:
     PhaseCoder(Wave* wave_file, int block_size) : wave_file(wave_file), block_size(block_size) { } 
     void encode();
     void decode() {}
-    ~PhaseCoder() {
-        delete wave_file;
-    }
+    ~PhaseCoder();
 };
 
 #endif 

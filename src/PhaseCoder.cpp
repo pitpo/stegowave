@@ -77,6 +77,13 @@ std::vector<short> PhaseCoder::encode2(std::vector<short> &left, std::vector<sho
         out.push_back(left[i]);
         out.push_back(right[i]);
     }
+    fftw_destroy_plan(pb_c);
+    fftw_destroy_plan(pb_d);
+    fftw_destroy_plan(pf);
+    fftw_free(out_c);
+    fftw_free(in_c);
+    fftw_free(in_d);
+
     return out;
 }
 
@@ -84,5 +91,9 @@ void PhaseCoder::encode() {
     auto channels = (*wave_file).split_channels();
     auto data = encode2(std::get<0>(channels), std::get<1>(channels));
     (*wave_file).set_data(data);
-    (*wave_file).write_wav("dupa.wav");
+    (*wave_file).write_wav("tmp.wav");
+}
+
+PhaseCoder::~PhaseCoder() {
+    delete wave_file;
 }
