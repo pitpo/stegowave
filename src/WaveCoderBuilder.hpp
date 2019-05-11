@@ -7,23 +7,26 @@
 #include <memory>
 
 class WaveCoderBuilder {
-    std::string input_file = "";
+    std::string input_file	= "";
     std::string output_file = "stegout";
-    std::string data_file = "data";
-    int block_size = 2048;
+    std::string data_file	= "data";
+    int block_size			= 2048;
     int d0 = -1;
     int d1 = -1;
     double echo_amplitude = 0.25;
-    int offset = 0;
-    int hint = -1;
-    bool ecc = 0;
-    int echo_fade = 100;
+    int offset			  = 0;
+    int hint		 = -1;
+    bool ecc		 = 0;
+    int echo_fade	 = 100;
     CODER_TYPE coder = NONE;
 
     std::unique_ptr<WaveCoder> build_echo();
     std::unique_ptr<WaveCoder> build_phase();
+
 public:
-    WaveCoderBuilder() { }
+    WaveCoderBuilder() {
+    }
+
     WaveCoderBuilder& setInputFile(std::string);
     WaveCoderBuilder& setOutputFile(std::string);
     WaveCoderBuilder& setDataFile(std::string);
@@ -35,8 +38,9 @@ public:
     WaveCoderBuilder& setDataSizeHint(int);
     WaveCoderBuilder& setECCMode(bool);
     WaveCoderBuilder& setEchoFadeLength(int);
+
     WaveCoderBuilder& setCoderType(CODER_TYPE);
     std::unique_ptr<WaveCoder> build();
 };
 
-#endif 
+#endif

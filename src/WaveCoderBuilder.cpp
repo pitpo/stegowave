@@ -121,28 +121,35 @@ std::unique_ptr<WaveCoder> WaveCoderBuilder::build_echo() {
         hint,
         ecc,
         echo_fade
-    );
+        );
 }
 
 std::unique_ptr<WaveCoder> WaveCoderBuilder::build_phase() {
     Wave *wave_file = new Wave(input_file);
+
     return std::make_unique<PhaseCoder>(
         wave_file,
-        block_size
-    );
+        block_size,
+        output_file,
+        data_file
+        );
 }
 
 std::unique_ptr<WaveCoder> WaveCoderBuilder::build() {
-    switch(coder) {
-        case ECHO:
-            return build_echo();
-            break;
-        case PHASE:
-            return build_phase();
-            break; 
-        case NONE:
-        default:
-            throw std::runtime_error("No coder specified");
-            break;
+    switch (coder) {
+      case ECHO:
+          return build_echo();
+
+          break;
+
+      case PHASE:
+          return build_phase();
+
+          break;
+
+      case NONE:
+      default:
+          throw std::runtime_error("No coder specified");
+          break;
     }
 }

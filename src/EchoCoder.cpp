@@ -11,6 +11,7 @@ void EchoCoder::encode() {
     std::cout << "Preparing wave file..." << std::endl;
     auto channels = (*wave_file).split_channels();
     std::vector<bool> data_bits;
+
     if (ecc) {
         std::cout << "WARNING: Injecting recovery data" << std::endl;
         if (block_size > 2048) {
@@ -35,16 +36,18 @@ void EchoCoder::encode() {
 void EchoCoder::decode() {
     std::cout << "Decoding using echo hiding method" << std::endl;
     std::cout << "Preparing wave file..." << std::endl;
-    auto channels	  = (*wave_file).split_channels();
+    auto channels = (*wave_file).split_channels();
     std::cout << "Decoding in progress..." << std::endl;
     auto decoded_data = extract_echo(std::get<0>(channels), std::get<1>(channels));
 
     std::cout << "Writing output into \"" << output_file << "\" file" << std::endl;
+
     save_bits(output_file, decoded_data);
 }
 
 std::vector<short> EchoCoder::get_raw_echo(std::vector<short>& channel, std::vector<bool>& data_bits, bool bit) {
     std::vector<short> echo;
+
     echo.reserve(data_bits.size() * block_size);
     int d = bit == 0 ? d0 : d1;
 
@@ -63,6 +66,7 @@ std::vector<short> EchoCoder::get_raw_echo(std::vector<short>& channel, std::vec
 
 std::vector<double> EchoCoder::get_mixer(std::vector<bool>& data_bits) {
     std::vector<double> mixer;
+
     mixer.reserve(data_bits.size() * block_size);
 
     for (int i = 0; i < data_bits.size(); i++) {
@@ -85,7 +89,7 @@ short get_applied_echo(std::vector<short>& channel, std::vector<short>& channel_
         pcm_to_double(channel[offset]) +
         echo_amplitude * pcm_to_double(channel_d1[i]) * mixer[i] +
         echo_amplitude * pcm_to_double(channel_d0[i]) * (1.0 - mixer[i])
-    );
+        );
 }
 
 std::vector<short> EchoCoder::apply_echo(std::vector<short>&left, std::vector<short>&right, std::vector<bool>&data_bits) {
@@ -95,6 +99,7 @@ std::vector<short> EchoCoder::apply_echo(std::vector<short>&left, std::vector<sh
     auto right_d1 = get_raw_echo(right, data_bits, 0);
     auto mixer	  = get_mixer(data_bits);
     std::vector<short> out;
+
     out.reserve(left.size() * 2);
     int i = 0;
     for (int j = offset / 2; i < mixer.size(); i++, j++) {
@@ -143,7 +148,7 @@ std::vector<bool> EchoCoder::extract_echo(std::vector<short>&left, std::vector<s
         byte_size = (block_size > 2048) ? 12 : 14;
     }
     int errors_recovered = 0;
-    int errors_in_ecc = 0;
+    int errors_in_ecc	 = 0;
 
     bool byte[byte_size];
     for (int i = 0; i < hint * byte_size; i++) {
@@ -170,8 +175,9 @@ std::vector<bool> EchoCoder::extract_echo(std::vector<short>&left, std::vector<s
         }
     }
 
-    if (ecc)
+    if (ecc) {
         std::cout << errors_recovered << " bits had errors, " << errors_in_ecc << " of them were in recovery data" << std::endl;
+    }
 
     fftw_destroy_plan(pf);
     fftw_destroy_plan(pb);

@@ -17,10 +17,11 @@ Wave::~Wave() {
     delete[] footer;
 }
 
-std::tuple<std::vector<short>, std::vector<short> > Wave::split_channels() {
+std::tuple<std::vector<short>, std::vector<short>> Wave::split_channels() {
     std::vector<short> left, right;
-    left.reserve(data.size()/2);
-    right.reserve(data.size()/2);
+
+    left.reserve(data.size() / 2);
+    right.reserve(data.size() / 2);
 
     for (int i = 0; i < data.size(); i++) {
         if (i % 2 == 0) {
@@ -34,6 +35,7 @@ std::tuple<std::vector<short>, std::vector<short> > Wave::split_channels() {
 
 void Wave::write_wav(std::string pathToFile) {
     std::ofstream file(pathToFile, std::ios::binary | std::ios::out);
+
     file.write(header, 12);
     file.write(subchunk1, 24);
     file.write(subchunk2, 8);
@@ -91,7 +93,7 @@ void Wave::read_wav(std::string pathToFile) {
     char   *footerBuffer = new char[footerSize];
     file.read(footerBuffer, footerSize);
     this->footerSize = footerSize;
-    footer	   = footerBuffer;
+    footer			 = footerBuffer;
 
     file.close();
 }

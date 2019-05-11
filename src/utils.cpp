@@ -6,7 +6,11 @@
 #define M_PI    3.14159265358979323846          /* pi */
 
 std::vector<bool> read_bits(std::string pathToFile) {
-    std::ifstream	  file(pathToFile, std::ios::binary | std::ios::in);
+    std::ifstream file(pathToFile, std::ios::binary | std::ios::in);
+
+    if (!file.good()) {
+        throw std::runtime_error("Given data file doest not exist");
+    }
     std::vector<bool> output;
     char c;
 
@@ -20,7 +24,11 @@ std::vector<bool> read_bits(std::string pathToFile) {
 }
 
 std::vector<bool> read_bits_with_ecc_8bit(std::string pathToFile) {
-    std::ifstream	  file(pathToFile, std::ios::binary | std::ios::in);
+    std::ifstream file(pathToFile, std::ios::binary | std::ios::in);
+
+    if (!file.good()) {
+        throw std::runtime_error("Given data file doest not exist");
+    }
     std::vector<bool> output;
     char c;
 
@@ -52,7 +60,11 @@ std::vector<bool> read_bits_with_ecc_8bit(std::string pathToFile) {
 }
 
 std::vector<bool> read_bits_with_ecc_6bit(std::string pathToFile) {
-    std::ifstream	  file(pathToFile, std::ios::binary | std::ios::in);
+    std::ifstream file(pathToFile, std::ios::binary | std::ios::in);
+
+    if (!file.good()) {
+        throw std::runtime_error("Given data file doest not exist");
+    }
     std::vector<bool> output;
     char c;
 
@@ -62,15 +74,15 @@ std::vector<bool> read_bits_with_ecc_6bit(std::string pathToFile) {
             byte[i] = (c >> i) & 1;
         }
         for (int i = 0; i < 2; i++) {
-            bool r1 = byte[i*4]^byte[i*4+1]^byte[i*4+3];
-            bool r2 = byte[i*4]^byte[i*4+2]^byte[i*4+3];
-            bool r3 = byte[i*4+1]^byte[i*4+2]^byte[i*4+3];
+            bool r1 = byte[i * 4] ^ byte[i * 4 + 1] ^ byte[i * 4 + 3];
+            bool r2 = byte[i * 4] ^ byte[i * 4 + 2] ^ byte[i * 4 + 3];
+            bool r3 = byte[i * 4 + 1] ^ byte[i * 4 + 2] ^ byte[i * 4 + 3];
             output.push_back(r1);
             output.push_back(r2);
-            output.push_back(byte[i*4]);
+            output.push_back(byte[i * 4]);
             output.push_back(r3);
             for (int j = 1; j < 4; j++) {
-                output.push_back(byte[i*4+j]);
+                output.push_back(byte[i * 4 + j]);
             }
         }
     }

@@ -142,8 +142,8 @@ int main(int argc, char *argv[]) {
         } else if (mode_flag == DECODE) {
             (*coder.get()).decode();
         }
+        coder.reset();
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
     }
-    // printf("Mode: %d, method: %s, block_size: %d, data: %s, output %s\n", mode_flag, method.c_str(), block_size, data.c_str(), output.c_str());
 }
