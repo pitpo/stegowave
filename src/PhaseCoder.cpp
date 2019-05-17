@@ -7,19 +7,25 @@
 #define PI    std::acos(-1.0)
 
 void PhaseCoder::encode() {
-    std::cout << "Encoding using echo hiding method" << std::endl;
+    std::cout << "Encoding using phase coding method" << std::endl;
     std::cout << "Preparing wave file..." << std::endl;
     auto channels  = (*wave_file).split_channels();
     auto data_bits = read_bits(data_file);
+    int	 blocks	   = 0;
 
-    if (data_bits.size() >= block_size) {
+    analyze_silence(std::get<0>(channels), blocks);
+    analyze_silence(std::get<1>(channels), blocks);
+    if (data_bits.size() >= writable_blocks.size() * block_size / 4) {
         throw std::runtime_error("Too much data");
     }
     std::cout << "Bits to write: " << data_bits.size() << std::endl;
+    std::cout << "Blocks to write: " << writable_blocks.size() << std::endl;
+    std::cout << "Bits per " << block_size << " sample long block: " << data_bits.size() / writable_blocks.size() << std::endl;
     std::cout << "Encoding in progress..." << std::endl;
-    int	 bits_encoded  = 0;
-    auto encoded_left  = encode_channel(std::get<0>(channels), data_bits, bits_encoded);
-    auto encoded_right = encode_channel(std::get<1>(channels), data_bits, bits_encoded);
+    int	 bits_encoded	= 0;
+    int	 blocks_encoded = 0;
+    auto encoded_left	= encode_channel(std::get<0>(channels), data_bits, bits_encoded, blocks_encoded, 1);
+    auto encoded_right	= encode_channel(std::get<1>(channels), data_bits, bits_encoded, blocks_encoded, 2);
     std::vector<short> out;
     for (int i = 0; i < encoded_left.size(); i++) {
         out.push_back(encoded_left[i]);
@@ -32,17 +38,25 @@ void PhaseCoder::encode() {
 }
 
 void PhaseCoder::decode() {
-    auto channels	= (*wave_file).split_channels();
-    auto left_bits	= decode_channel(std::get<0>(channels));
-    auto right_bits = decode_channel(std::get<1>(channels));
-    std::vector<bool> data;
+    std::cout << "Decoding using phase coding method" << std::endl;
+    std::cout << "Preparing wave file..." << std::endl;
+    int	 blocks	  = 0;
+    auto channels = (*wave_file).split_channels();
 
+    analyze_silence(std::get<0>(channels), blocks);
+    analyze_silence(std::get<1>(channels), blocks);
+    std::cout << "Blocks to read: " << writable_blocks.size() << std::endl;
+    std::cout << "Decoding in progress..." << std::endl;
+    auto left_bits	= decode_channel(std::get<0>(channels), 1);
+    auto right_bits = decode_channel(std::get<1>(channels), 2);
+    std::vector<bool> data;
     for (int i = 0; i < left_bits.size(); i++) {
         data.push_back(left_bits[i]);
     }
     for (int i = 0; i < right_bits.size(); i++) {
         data.push_back(right_bits[i]);
     }
+    std::cout << "Writing output into \"" << output_file << "\" file" << std::endl;
     save_bits(output_file, data);
 }
 
@@ -59,7 +73,7 @@ int extract_bit(double angle, double next_angle) {
     }
 }
 
-std::vector<bool> PhaseCoder::decode_channel(std::vector<short>& channel) {
+std::vector<bool> PhaseCoder::decode_channel(std::vector<short>& channel, int channel_num) {
     auto blocks = divide_blocks(channel);
     std::vector<std::vector<std::complex<double>>> magnitudes;
     std::vector<std::vector<double>> phases;
@@ -67,18 +81,19 @@ std::vector<bool> PhaseCoder::decode_channel(std::vector<short>& channel) {
     decompose_signal(blocks, magnitudes, phases);
 
     std::vector<bool> out;
-    int block_after_silence = skip_silence(magnitudes);
-    int i	= block_size / 2 - 1;
-    int bit = extract_bit(phases[block_after_silence][i], phases[block_after_silence][i - 1]);
-    while (bit != 2) {
-        i--;
-        out.push_back(bit);
-        bit = extract_bit(phases[block_after_silence][i], phases[block_after_silence][i - 1]);
+    for (int i = 0; i < writable_blocks.size() && writable_blocks[i] < blocks.size() * channel_num; i++) {
+        int j	= block_size / 2 - 1;
+        int bit = extract_bit(phases[writable_blocks[i] % blocks.size()][j], phases[writable_blocks[i] % blocks.size()][j - 1]);
+        while (bit != 2) {
+            j--;
+            out.push_back(bit);
+            bit = extract_bit(phases[writable_blocks[i] % blocks.size()][j], phases[writable_blocks[i] % blocks.size()][j - 1]);
+        }
     }
     return out;
 }
 
-std::vector<short> PhaseCoder::encode_channel(std::vector<short>& channel, std::vector<bool>& data_bits, int& bits_encoded) {
+std::vector<short> PhaseCoder::encode_channel(std::vector<short>& channel, std::vector<bool>& data_bits, int& bits_encoded, int& blocks_encoded, int channel_num) {
     auto blocks = divide_blocks(channel);
     std::vector<std::vector<std::complex<double>>> magnitudes;
     std::vector<std::vector<double>> phases;
@@ -91,18 +106,26 @@ std::vector<short> PhaseCoder::encode_channel(std::vector<short>& channel, std::
         for (int j = 0; j < phases[i].size(); j++) {
             phase_difference.push_back(phases[i][j] - phases[i - 1][j]);
         }
+        phase_differences.push_back(phase_difference);
     }
 
-    int block_after_silence = skip_silence(magnitudes);
-
-    for (int i = 1; i <= data_bits.size() / 2 && bits_encoded < data_bits.size(); i++, bits_encoded++) {
-        phases[block_after_silence][block_size / 2 - i] = data_bits[bits_encoded] ? PI / 2 : -PI / 2;
-    }
-
-    for (int i = block_after_silence; i < phase_differences.size(); i++) {
-        for (int j = 0; j < phases[i].size(); j++) {
-            phases[i + 1][j] = phases[i][j] + phase_differences[i][j];
+    // TODO: find a decent name for these variables
+    bool cond, cond2;
+    for (; blocks_encoded < writable_blocks.size() && writable_blocks[blocks_encoded] < blocks.size() * channel_num; blocks_encoded++) {
+        std::cout << "encoding block " << writable_blocks[blocks_encoded] << std::endl;
+        int block_to_write = writable_blocks[blocks_encoded] % blocks.size();
+        for (int i = 1; i <= data_bits.size() / writable_blocks.size() && bits_encoded < data_bits.size(); i++, bits_encoded++) {
+            phases[block_to_write][block_size / 2 - i] = data_bits[bits_encoded] ? PI / 2 : -PI / 2;
         }
+        int i = block_to_write;
+        do {
+            for (int j = 0; j < phases[i].size(); j++) {
+                phases[i + 1][j] = phases[i][j] + phase_differences[i][j];
+            }
+            i++;
+            cond  = i < phase_differences.size() && i + 1 < writable_blocks.size() && i < writable_blocks[blocks_encoded + 1] % blocks.size();
+            cond2 = i < phase_differences.size() && i + 1 >= writable_blocks.size();
+        } while (cond || cond2);
     }
 
     double				*in_d  = (double *)fftw_malloc(sizeof(double) * block_size);
@@ -152,12 +175,10 @@ void PhaseCoder::decompose_signal(std::vector<std::vector<short>>& blocks, std::
         fftw_execute(pf);
         std::vector<std::complex<double>> magnitude;
         std::vector<double> phase;
-        // std::cout << "new block" << std::endl;
         for (int j = 0; j <= block_size / 2 + 1; j++) {
             std::complex<double> c(out_c[j][0], out_c[j][1]);
             magnitude.push_back(std::abs(c));
             phase.push_back(std::log(c).imag());
-            // std::cout << magnitude[j] << " " << phase[j] << std::endl;
         }
         magnitudes.push_back(magnitude);
         phases.push_back(phase);
@@ -190,6 +211,30 @@ int PhaseCoder::skip_silence(std::vector<std::vector<std::complex<double>>>& mag
         }
     }
     throw std::runtime_error("ERROR: Signal is silent");
+}
+
+void PhaseCoder::analyze_silence(std::vector<short>& channel, int& blocks_encountered) {
+    auto blocks = divide_blocks(channel);
+    std::vector<std::vector<std::complex<double>>> magnitudes;
+    std::vector<std::vector<double>> phases;
+
+    decompose_signal(blocks, magnitudes, phases);
+
+    bool prev_is_silent = false;
+    for (int i = 0; i < magnitudes.size(); i++, blocks_encountered++) {
+        bool is_silent = true;
+        for (int j = 0; j < block_size / 4; j++) {
+            if (magnitudes[i][j].real() > 1000) {
+                is_silent = false;
+                if (prev_is_silent || i == 0) {
+                    writable_blocks.push_back(blocks_encountered);
+                    prev_is_silent = false;
+                    break;
+                }
+            }
+        }
+        prev_is_silent = is_silent;
+    }
 }
 
 PhaseCoder::~PhaseCoder() {

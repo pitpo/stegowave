@@ -1,24 +1,68 @@
+# Compiler flags
+CXXFLAGS = -Wall -Wno-sign-compare -c -std=c++17
+LFLAGS = -Wall -std=c++17 -lfftw3 -lm
+
+# Project variables
 OBJS = Utils.o Wave.o EchoCoder.o PhaseCoder.o WaveCoderBuilder.o
-PROGRAM = $(OBJS) src/main.cpp
-CC = g++
-DEBUG = -g
-CFLAGS = -c -O2 -std=c++17
-LFLAGS = -Wall -O2 -std=c++17 -lfftw3 -lm
+EXE = stegowave
 
-stegowave : $(PROGRAM)
-	$(CC) $(PROGRAM) $(LFLAGS) -o stegowave
+# Debug build
+DBGDIR = debug
+DBGEXE = $(DBGDIR)/$(EXE)
+DBGOBJS = $(addprefix $(DBGDIR)/, $(OBJS))
+DBGCXXFLAGS = -g -O0
 
-Utils.o : src/Utils.cpp src/Utils.hpp
-	$(CC) $(CFLAGS) -fpermissive src/Utils.cpp
+# Release build
+RELDIR = release
+RELEXE = $(RELDIR)/$(EXE)
+RELOBJS = $(addprefix $(RELDIR)/, $(OBJS))
+RELCXXFLAGS = -O3
 
-Wave.o : src/Wave.cpp src/Wave.hpp
-	$(CC) $(CFLAGS) src/Wave.cpp
+# default rules
 
-EchoCoder.o : src/EchoCoder.cpp src/EchoCoder.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
-	$(CC) $(CFLAGS) src/EchoCoder.cpp
+all: prep release
 
-PhaseCoder.o : src/PhaseCoder.cpp src/PhaseCoder.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
-	$(CC) $(CFLAGS) src/PhaseCoder.cpp
+prep:
+	@mkdir -p $(DBGDIR) $(RELDIR)
 
-WaveCoderBuilder.o : src/WaveCoderBuilder.cpp src/WaveCoderBuilder.hpp src/WaveCoder.hpp src/EchoCoder.hpp src/Wave.hpp src/Utils.hpp
-	$(CC) $(CFLAGS) src/WaveCoderBuilder.cpp
+# debug rules
+
+debug: $(DBGEXE)
+$(DBGEXE): $(DBGOBJS)
+	$(CXX) $(DBGOBJS) -o $@ $(DBGCXXFLAGS) src/main.cpp $(LFLAGS)
+
+$(DBGDIR)/Utils.o: src/Utils.cpp src/Utils.hpp
+	$(CXX) $(CXXFLAGS) $(DBGCXXFLAGS) -fpermissive -o $@ $<
+
+$(DBGDIR)/Wave.o: src/Wave.cpp src/Wave.hpp
+	$(CXX) $(CXXFLAGS) $(DBGCXXFLAGS) -o $@ $<
+
+$(DBGDIR)/EchoCoder.o: src/EchoCoder.cpp src/EchoCoder.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
+	$(CXX) $(CXXFLAGS) $(DBGCXXFLAGS) -o $@ $<
+
+$(DBGDIR)/PhaseCoder.o: src/PhaseCoder.cpp src/PhaseCoder.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
+	$(CXX) $(CXXFLAGS) $(DBGCXXFLAGS) -o $@ $<
+
+$(DBGDIR)/WaveCoderBuilder.o: src/WaveCoderBuilder.cpp src/WaveCoderBuilder.hpp src/WaveCoder.hpp src/EchoCoder.hpp src/Wave.hpp src/Utils.hpp
+	$(CXX) $(CXXFLAGS) $(DBGCXXFLAGS) -o $@ $<
+
+# release rules
+
+release: $(RELEXE)
+$(RELEXE): $(RELOBJS)
+	$(CXX) $(RELCXXFLAGS) -o $@ $(RELOBJS) src/main.cpp $(LFLAGS)
+
+$(RELDIR)/Utils.o: src/Utils.cpp src/Utils.hpp
+	$(CXX) $(CXXFLAGS) $(RELCXXFLAGS) -fpermissive -o $@ $<
+
+$(RELDIR)/Wave.o: src/Wave.cpp src/Wave.hpp
+	$(CXX) $(CXXFLAGS) $(RELCXXFLAGS) -o $@ $<
+
+$(RELDIR)/EchoCoder.o: src/EchoCoder.cpp src/EchoCoder.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
+	$(CXX) $(CXXFLAGS) $(RELCXXFLAGS) -o $@ $<
+
+$(RELDIR)/PhaseCoder.o: src/PhaseCoder.cpp src/PhaseCoder.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
+	$(CXX) $(CXXFLAGS) $(RELCXXFLAGS) -o $@ $<
+
+$(RELDIR)/WaveCoderBuilder.o: src/WaveCoderBuilder.cpp src/WaveCoderBuilder.hpp src/WaveCoder.hpp src/EchoCoder.hpp src/Wave.hpp src/Utils.hpp
+	$(CXX) $(CXXFLAGS) $(RELCXXFLAGS) -o $@ $<

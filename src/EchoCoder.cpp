@@ -72,9 +72,9 @@ std::vector<double> EchoCoder::get_mixer(std::vector<bool>& data_bits) {
     for (int i = 0; i < data_bits.size(); i++) {
         int sign = data_bits[i] == 1 ? 1 : -1;
         for (int j = 0; j < block_size; j++) {
-            if (j < echo_fade && (i > 0 && data_bits[i - 1] != data_bits[i]) || i == 0) {
+            if (j < echo_fade && ((i > 0 && data_bits[i - 1] != data_bits[i]) || i == 0)) {
                 mixer.push_back(mixer_translate(j * sign, echo_fade));
-            } else if (j >= block_size - echo_fade && (i + 1 < data_bits.size() && data_bits[i + 1] != data_bits[i]) || i == data_bits.size() - 1) {
+            } else if (j >= block_size - echo_fade && ((i + 1 < data_bits.size() && data_bits[i + 1] != data_bits[i]) || i == data_bits.size() - 1)) {
                 mixer.push_back(mixer_translate(sign * block_size - sign * j, echo_fade));
             } else {
                 mixer.push_back(data_bits[i]);
