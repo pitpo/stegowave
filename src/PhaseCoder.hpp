@@ -16,7 +16,7 @@ class PhaseCoder : public WaveCoder {
     std::vector<short> encode_channel(std::vector<short>&, std::vector<bool>&, int&, int&, int);
     void decompose_signal(std::vector<std::vector<short>>&, std::vector<std::vector<std::complex<double>>>&, std::vector<std::vector<double>>&);
     std::vector<std::vector<short>> divide_blocks(std::vector<short>&);
-    std::vector<bool> decode_channel(std::vector<short>&, int);
+    std::vector<bool> decode_channel(std::vector<short>&, int&, int);
     int skip_silence(std::vector<std::vector<std::complex<double>>>&);
     void analyze_silence(std::vector<short>&, int&);
 public:

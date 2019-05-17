@@ -47,8 +47,9 @@ void PhaseCoder::decode() {
     analyze_silence(std::get<1>(channels), blocks);
     std::cout << "Blocks to read: " << writable_blocks.size() << std::endl;
     std::cout << "Decoding in progress..." << std::endl;
-    auto left_bits	= decode_channel(std::get<0>(channels), 1);
-    auto right_bits = decode_channel(std::get<1>(channels), 2);
+    int blocks_decoded = 0;
+    auto left_bits	= decode_channel(std::get<0>(channels), blocks_decoded, 1);
+    auto right_bits = decode_channel(std::get<1>(channels), blocks_decoded, 2);
     std::vector<bool> data;
     for (int i = 0; i < left_bits.size(); i++) {
         data.push_back(left_bits[i]);
@@ -73,7 +74,7 @@ int extract_bit(double angle, double next_angle) {
     }
 }
 
-std::vector<bool> PhaseCoder::decode_channel(std::vector<short>& channel, int channel_num) {
+std::vector<bool> PhaseCoder::decode_channel(std::vector<short>& channel, int& blocks_decoded, int channel_num) {
     auto blocks = divide_blocks(channel);
     std::vector<std::vector<std::complex<double>>> magnitudes;
     std::vector<std::vector<double>> phases;
@@ -81,13 +82,14 @@ std::vector<bool> PhaseCoder::decode_channel(std::vector<short>& channel, int ch
     decompose_signal(blocks, magnitudes, phases);
 
     std::vector<bool> out;
-    for (int i = 0; i < writable_blocks.size() && writable_blocks[i] < blocks.size() * channel_num; i++) {
+    for (; blocks_decoded < writable_blocks.size() && writable_blocks[blocks_decoded] < blocks.size() * channel_num; blocks_decoded++) {
+        std::cout << "decoding block " << writable_blocks[blocks_decoded] << std::endl;
         int j	= block_size / 2 - 1;
-        int bit = extract_bit(phases[writable_blocks[i] % blocks.size()][j], phases[writable_blocks[i] % blocks.size()][j - 1]);
+        int bit = extract_bit(phases[writable_blocks[blocks_decoded] % blocks.size()][j], phases[writable_blocks[blocks_decoded] % blocks.size()][j - 1]);
         while (bit != 2) {
             j--;
             out.push_back(bit);
-            bit = extract_bit(phases[writable_blocks[i] % blocks.size()][j], phases[writable_blocks[i] % blocks.size()][j - 1]);
+            bit = extract_bit(phases[writable_blocks[blocks_decoded] % blocks.size()][j], phases[writable_blocks[blocks_decoded] % blocks.size()][j - 1]);
         }
     }
     return out;
