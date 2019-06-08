@@ -84,14 +84,6 @@ std::vector<double> EchoCoder::get_mixer(std::vector<bool>& data_bits) {
     return mixer;
 }
 
-short get_applied_echo(std::vector<short>& channel, std::vector<short>& channel_d0, std::vector<short>& channel_d1, std::vector<double>& mixer, double echo_amplitude, int offset, int i) {
-    return double_to_pcm(
-        pcm_to_double(channel[offset]) +
-        echo_amplitude * pcm_to_double(channel_d1[i]) * mixer[i] +
-        echo_amplitude * pcm_to_double(channel_d0[i]) * (1.0 - mixer[i])
-        );
-}
-
 std::vector<short> EchoCoder::apply_echo(std::vector<short>&left, std::vector<short>&right, std::vector<bool>&data_bits) {
     auto left_d0  = get_raw_echo(left, data_bits, 0);
     auto left_d1  = get_raw_echo(left, data_bits, 1);
@@ -102,9 +94,14 @@ std::vector<short> EchoCoder::apply_echo(std::vector<short>&left, std::vector<sh
 
     out.reserve(left.size() * 2);
     int i = 0;
-    for (int j = offset / 2; i < mixer.size(); i++, j++) {
-        out.push_back(get_applied_echo(left, left_d0, left_d1, mixer, echo_amplitude, j, i));
-        out.push_back(get_applied_echo(right, right_d0, right_d1, mixer, echo_amplitude, j, i));
+    for (; i < offset / 2; i++) {
+        out.push_back(left[i]);
+        out.push_back(right[i]);
+    }
+
+    for (int j = 0; i < mixer.size(); i++, j++) {
+        out.push_back(ecs->get_applied_echo(left, left_d0, left_d1, mixer, echo_amplitude, i, j, d0, d1));
+        out.push_back(ecs->get_applied_echo(right, right_d0, right_d1, mixer, echo_amplitude, i, j, d1, d0));
     }
 
     for (; i < left.size(); i++) {

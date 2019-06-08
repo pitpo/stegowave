@@ -3,7 +3,7 @@ CXXFLAGS = -Wall -Wno-sign-compare -c -std=c++17
 LFLAGS = -Wall -std=c++17 -lfftw3 -lm
 
 # Project variables
-OBJS = Utils.o Wave.o EchoCoder.o PhaseCoder.o WaveCoderBuilder.o
+OBJS = Utils.o Wave.o EchoCoder.o EchoCoderStrategy.o PhaseCoder.o WaveCoderBuilder.o
 EXE = stegowave
 
 # Debug build
@@ -37,13 +37,16 @@ $(DBGDIR)/Utils.o: src/Utils.cpp src/Utils.hpp
 $(DBGDIR)/Wave.o: src/Wave.cpp src/Wave.hpp
 	$(CXX) $(CXXFLAGS) $(DBGCXXFLAGS) -o $@ $<
 
-$(DBGDIR)/EchoCoder.o: src/EchoCoder.cpp src/EchoCoder.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
+$(DBGDIR)/EchoCoder.o: src/EchoCoder.cpp src/EchoCoder.hpp src/EchoCoderStrategy.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
+	$(CXX) $(CXXFLAGS) $(DBGCXXFLAGS) -o $@ $<
+
+$(DBGDIR)/EchoCoderStrategy.o: src/EchoCoderStrategy.cpp src/EchoCoderStrategy.hpp src/Utils.hpp
 	$(CXX) $(CXXFLAGS) $(DBGCXXFLAGS) -o $@ $<
 
 $(DBGDIR)/PhaseCoder.o: src/PhaseCoder.cpp src/PhaseCoder.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
 	$(CXX) $(CXXFLAGS) $(DBGCXXFLAGS) -o $@ $<
 
-$(DBGDIR)/WaveCoderBuilder.o: src/WaveCoderBuilder.cpp src/WaveCoderBuilder.hpp src/WaveCoder.hpp src/EchoCoder.hpp src/Wave.hpp src/Utils.hpp
+$(DBGDIR)/WaveCoderBuilder.o: src/WaveCoderBuilder.cpp src/WaveCoderBuilder.hpp src/WaveCoder.hpp src/EchoCoder.hpp src/EchoCoderStrategy.hpp src/Wave.hpp src/Utils.hpp
 	$(CXX) $(CXXFLAGS) $(DBGCXXFLAGS) -o $@ $<
 
 # release rules
@@ -58,11 +61,14 @@ $(RELDIR)/Utils.o: src/Utils.cpp src/Utils.hpp
 $(RELDIR)/Wave.o: src/Wave.cpp src/Wave.hpp
 	$(CXX) $(CXXFLAGS) $(RELCXXFLAGS) -o $@ $<
 
-$(RELDIR)/EchoCoder.o: src/EchoCoder.cpp src/EchoCoder.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
+$(RELDIR)/EchoCoder.o: src/EchoCoder.cpp src/EchoCoder.hpp src/EchoCoderStrategy.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
+	$(CXX) $(CXXFLAGS) $(RELCXXFLAGS) -o $@ $<
+
+$(RELDIR)/EchoCoderStrategy.o: src/EchoCoderStrategy.cpp src/EchoCoderStrategy.hpp src/Utils.hpp
 	$(CXX) $(CXXFLAGS) $(RELCXXFLAGS) -o $@ $<
 
 $(RELDIR)/PhaseCoder.o: src/PhaseCoder.cpp src/PhaseCoder.hpp src/Wave.hpp src/Utils.hpp src/WaveCoder.hpp
 	$(CXX) $(CXXFLAGS) $(RELCXXFLAGS) -o $@ $<
 
-$(RELDIR)/WaveCoderBuilder.o: src/WaveCoderBuilder.cpp src/WaveCoderBuilder.hpp src/WaveCoder.hpp src/EchoCoder.hpp src/Wave.hpp src/Utils.hpp
+$(RELDIR)/WaveCoderBuilder.o: src/WaveCoderBuilder.cpp src/WaveCoderBuilder.hpp src/WaveCoder.hpp src/EchoCoder.hpp src/EchoCoderStrategy.hpp src/Wave.hpp src/Utils.hpp
 	$(CXX) $(CXXFLAGS) $(RELCXXFLAGS) -o $@ $<

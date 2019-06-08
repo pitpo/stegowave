@@ -101,3 +101,7 @@ void Wave::read_wav(std::string pathToFile) {
 void Wave::set_data(std::vector<short> data) {
     this->data = data;
 }
+
+std::vector<short>& Wave::get_data() {
+    return this->data;
+}

@@ -13,15 +13,18 @@ void help(std::string name) {
     std::cerr << "Usage: " << name << " <option> <parameters> SOURCE\n"
               << "Options:\n"
               << "\t-h,--help\t\t\t\tShow this help message\n"
-              << "\t-e,--encode (echo [-0 -1 -a]/phase)\tEncode data into wave file using (echo hiding/phase coding) method\n"
-              << "\t-d,--decode (echo [-0 -1 -s]/phase)\tDecode data from wave file using (echo hiding/phase coding) method\n\n"
+              << "\t-e,--encode (echo [-0 -1 -a --ecc --beh --bfeh]/phase)\tEncode data into wave file using (echo hiding/phase coding) method\n"
+              << "\t-d,--decode (echo [-0 -1 -s --ecc]/phase [-t])\tDecode data from wave file using (echo hiding/phase coding) method\n\n"
               << "Parameters:\n"
               << "\t-0 [shift]\t\t\tSpecify the echo shift for bit 0\n"
               << "\t-1 [shift]\t\t\tSpecify the echo shift for bit 1\n"
               << "\t-a [amplitude]\t\t\tSpecify the max amplitude of applied echo (0.0 to 1.0)\n"
               << "\t-s [size]\t\t\tHint the size of expected output (in bytes)\n"
+              << "\t-t [threshold]\t\t\tSpecify the threshold for modified phase detection (0.0 to 1.0)\n"
               << "\t--offset [offset]\t\tSpecify the offset from which encoding/decoding should start\n"
               << "\t--ecc\t\t\t\tToggle error correction code (writes additional 4 or 6 bits for each byte)\n"
+              << "\t--beh\t\t\t\tUse bipolar echo hiding method\n"
+              << "\t--bfeh\t\t\t\tUse backwards-forwards echo hiding method\n"
               << "\t-b,--block-size [power-of-2]\tSpecify the amount of samples in block (default is 1024)\n"
               << "\t--data [path-to-file]\t\tSpecify the data file to be encoded in file (while using phase coding, it's size must be lower or equal to block size [in bits])\n"
               << "\t--output [path-to-file]\t\tSpecify the file that output should be written to (default is [original-name.dat])" << std::endl;
@@ -46,10 +49,12 @@ int main(int argc, char *argv[]) {
             { "output",	   required_argument, 0, 'o' },
             { "offset",    required_argument, 0, 'f' },
             { "ecc",       no_argument      , 0, 'c' },
+            { "beh",       no_argument      , 0, '2' },
+            { "bfeh",      no_argument      , 0, '3' },
             { 0, 0, 0, 0}
         };
 
-        int c = getopt_long(argc, argv, "he:d:b:f:s:0:1:a:", long_options, &option_index);
+        int c = getopt_long(argc, argv, "he:d:b:f:s:0:1:a:t:", long_options, &option_index);
         if (c == -1) {
             break;
         }
@@ -122,6 +127,17 @@ int main(int argc, char *argv[]) {
                 break;
             case 'c':
                 wave_coder_builder.setECCMode(true);
+                break;
+            case '2':
+                wave_coder_builder.setEchoCoderStrategy(Bipolar_Echo);
+                break;
+            case '3':
+                wave_coder_builder.setEchoCoderStrategy(Backwards_Forwards_Echo);
+                break;
+            case 't':
+                if (optarg) {
+                    wave_coder_builder.setPhaseThreshold(std::stod(optarg));
+                }
                 break;
             default:
                 break;

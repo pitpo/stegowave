@@ -2,6 +2,7 @@
 #define ECHOCODER_HPP
 
 #include "WaveCoder.hpp"
+#include "EchoCoderStrategy.hpp"
 #include "Wave.hpp"
 #include <string>
 #include <vector>
@@ -10,6 +11,7 @@
 
 class EchoCoder : public WaveCoder {
     Wave *wave_file;
+    EchoCoderStrategy *ecs;
     std::string output_file;
     std::string data_file;
     int block_size;
@@ -28,7 +30,7 @@ class EchoCoder : public WaveCoder {
     std::vector<bool> extract_echo(std::vector<short>&, std::vector<short>&);
 
 public:
-    EchoCoder(Wave *wave_file, std::string output_file, std::string data_file, int block_size, int d0, int d1, double echo_amplitude, int offset, int hint, bool ecc, int echo_fade) : wave_file(wave_file), output_file(output_file), data_file(data_file), block_size(block_size), d0(d0), d1(d1), echo_amplitude(echo_amplitude), offset(offset), hint(hint), ecc(ecc), echo_fade(echo_fade) {
+    EchoCoder(Wave *wave_file, EchoCoderStrategy *ecs, std::string output_file, std::string data_file, int block_size, int d0, int d1, double echo_amplitude, int offset, int hint, bool ecc, int echo_fade) : wave_file(wave_file), ecs(ecs), output_file(output_file), data_file(data_file), block_size(block_size), d0(d0), d1(d1), echo_amplitude(echo_amplitude), offset(offset), hint(hint), ecc(ecc), echo_fade(echo_fade) {
     }
 
     void encode() override;

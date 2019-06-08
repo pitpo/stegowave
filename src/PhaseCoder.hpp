@@ -12,6 +12,7 @@ class PhaseCoder : public WaveCoder {
     std::string output_file;
     std::string data_file;
     std::vector<int> writable_blocks;
+    double pt;
 
     std::vector<short> encode_channel(std::vector<short>&, std::vector<bool>&, int&, int&, int);
     void decompose_signal(std::vector<std::vector<short>>&, std::vector<std::vector<std::complex<double>>>&, std::vector<std::vector<double>>&);
@@ -20,7 +21,7 @@ class PhaseCoder : public WaveCoder {
     int skip_silence(std::vector<std::vector<std::complex<double>>>&);
     void analyze_silence(std::vector<short>&, int&);
 public:
-    PhaseCoder(Wave *wave_file, int block_size, std::string output_file, std::string data_file) : wave_file(wave_file), block_size(block_size), output_file(output_file), data_file(data_file) {
+    PhaseCoder(Wave *wave_file, int block_size, std::string output_file, std::string data_file, double pt) : wave_file(wave_file), block_size(block_size), output_file(output_file), data_file(data_file), pt(pt) {
     }
 
     void encode();

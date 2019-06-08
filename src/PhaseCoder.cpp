@@ -61,9 +61,7 @@ void PhaseCoder::decode() {
     save_bits(output_file, data);
 }
 
-int extract_bit(double angle, double next_angle) {
-    double threshold = 0.25;
-
+int extract_bit(double angle, double next_angle, double threshold) {
     if (std::abs(PI / 2 - std::abs(angle)) > threshold && std::abs(PI / 2 - std::abs(next_angle)) > threshold) {
         return 2;
     }
@@ -85,11 +83,11 @@ std::vector<bool> PhaseCoder::decode_channel(std::vector<short>& channel, int& b
     for (; blocks_decoded < writable_blocks.size() && writable_blocks[blocks_decoded] < blocks.size() * channel_num; blocks_decoded++) {
         std::cout << "decoding block " << writable_blocks[blocks_decoded] << std::endl;
         int j	= block_size / 2 - 1;
-        int bit = extract_bit(phases[writable_blocks[blocks_decoded] % blocks.size()][j], phases[writable_blocks[blocks_decoded] % blocks.size()][j - 1]);
+        int bit = extract_bit(phases[writable_blocks[blocks_decoded] % blocks.size()][j], phases[writable_blocks[blocks_decoded] % blocks.size()][j - 1], pt);
         while (bit != 2) {
             j--;
             out.push_back(bit);
-            bit = extract_bit(phases[writable_blocks[blocks_decoded] % blocks.size()][j], phases[writable_blocks[blocks_decoded] % blocks.size()][j - 1]);
+            bit = extract_bit(phases[writable_blocks[blocks_decoded] % blocks.size()][j], phases[writable_blocks[blocks_decoded] % blocks.size()][j - 1], pt);
         }
     }
     return out;

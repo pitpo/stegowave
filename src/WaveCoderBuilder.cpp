@@ -99,6 +99,16 @@ WaveCoderBuilder& WaveCoderBuilder::setEchoFadeLength(int echo_fade) {
     return *this;
 }
 
+WaveCoderBuilder& WaveCoderBuilder::setEchoCoderStrategy(StrategyType st) {
+    this->ecs = this->ecs | st;
+    return *this;
+}
+
+WaveCoderBuilder& WaveCoderBuilder::setPhaseThreshold(double pt) {
+    this->pt = pt;
+    return *this;
+}
+
 WaveCoderBuilder& WaveCoderBuilder::setCoderType(CODER_TYPE coder) {
     this->coder = coder;
     return *this;
@@ -109,8 +119,11 @@ std::unique_ptr<WaveCoder> WaveCoderBuilder::build_echo() {
         throw std::runtime_error("Insufficient arguments");
     }
     Wave *wave_file = new Wave(input_file);
+    std::cout << "EchoCoderStrategy = " << ecs << std::endl;
+    EchoCoderStrategy *echo_coder_strategy = new EchoCoderStrategy(ecs);
     return std::make_unique<EchoCoder>(
         wave_file,
+        echo_coder_strategy,
         output_file,
         data_file,
         block_size,
@@ -131,7 +144,8 @@ std::unique_ptr<WaveCoder> WaveCoderBuilder::build_phase() {
         wave_file,
         block_size,
         output_file,
-        data_file
+        data_file,
+        pt
         );
 }
 
